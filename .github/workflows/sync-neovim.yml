@@ -25,7 +25,7 @@ jobs:
     - name: Check if tag already exists in GitHub
       id: check_tag
       run: |
-        tag_exists=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/${{ github.repository }}/tags" | jq -r '.[].name' | grep -w "${{ env.releases_tag }}")
+        tag_exists=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/${{ github.repository }}/tags" | jq -r '.[].name' | grep -w "${{ env.releases_tag }}" || true)
         if [ -n "$tag_exists" ]; then
           echo "Tag ${{ env.releases_tag }} already exists. Skipping release creation."
           echo "skip_release=true" >> $GITHUB_ENV
