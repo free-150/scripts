@@ -23,6 +23,7 @@ jobs:
           
           # 获取最新的 Release 版本信息
           release_tag=$(curl -s "$GITLAB_API_URL" | grep -Eo '"tag_name":"v[0-9]+\.[0-9]+\.[0-9]+"' | head -n 1 | awk -F'"' '{print $4}' | awk -F'v' '{print $2}')  # 仅获取最新的 Release
+          echo "最新版本是: $release_tag"
 
           # 创建一个 releases 文件夹以存储下载的文件
           mkdir -p releases
