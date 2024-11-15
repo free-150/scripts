@@ -120,7 +120,6 @@ is_install() {
     ln -s "$INSTALL_DIR/bin/nvim" /usr/local/bin/nvim
 }
 
-
 ADD_PATH() {
   nvim_path="/etc/profile.d/nvim.sh"
   if [ -f "$nvim_path" ]; then
@@ -135,12 +134,49 @@ EOF
   echo "Neovim 安装成功!"
 }
 
+ADD_MINI_CONFIG() {
+  if [ ! -d ~/.config/nvim ]; then
+    mkdir -p ~/.config/nvim   # 创建目录
+  fi
+
+  if [ -f ~/.config/nvim/init.lua ]; then
+    rm -rf ~/.config/nvim/init.lua
+  else
+    touch ~/.config/nvim/init.lua  # 创建空的 init.lua 文件
+  fi
+
+  cat <<EOF >> ~/.config/nvim/init.lua
+-- 设置行号
+vim.opt.number = true             -- 显示绝对行号
+vim.opt.relativenumber = true     -- 显示相对行号
+
+-- 设置 Tab 缩进
+vim.opt.tabstop = 4              -- 一个 tab 键宽度为 4 个空格
+vim.opt.shiftwidth = 4           -- 每次缩进使用 4 个空格
+vim.opt.expandtab = true         -- 使用空格代替 Tab 键
+
+-- 设置剪贴板
+vim.g.clipboard = {
+  name = 'OSC 52',
+  copy = {
+    ['+'] = require('vim.ui.clipboard.osc52').copy('+'),
+    ['*'] = require('vim.ui.clipboard.osc52').copy('*'),
+  },
+  paste = {
+    ['+'] = require('vim.ui.clipboard.osc52').paste('+'),
+    ['*'] = require('vim.ui.clipboard.osc52').paste('*'),
+  },
+}
+EOF
+}
+
 start_init () {
   is_platform
   is_neovim_version
   download_neovim
   is_install
   ADD_PATH
+  ADD_MINI_CONFIG
 
 }
 
