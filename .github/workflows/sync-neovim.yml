@@ -21,6 +21,7 @@ jobs:
         releases_tag=$(curl -s "https://gitlab.b-data.ch/api/v4/projects/362/releases" | grep -Eo '"tag_name":"v[0-9]+\.[0-9]+\.[0-9]+"' | head -n 1 | awk -F'"' '{print $4}')
         echo "releases_tag=$releases_tag" >> $GITHUB_ENV
 
+    # 检测已有同tag则跳过
     - name: Check if tag already exists in GitHub
       id: check_tag
       run: |
