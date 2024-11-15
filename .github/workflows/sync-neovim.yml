@@ -21,12 +21,25 @@ jobs:
         releases_tag=$(curl -s "https://gitlab.b-data.ch/api/v4/projects/362/releases" | grep -Eo '"tag_name":"v[0-9]+\.[0-9]+\.[0-9]+"' | head -n 1 | awk -F'"' '{print $4}')
         echo "releases_tag=$releases_tag" >> $GITHUB_ENV
 
+    - name: Check if tag already exists in GitHub
+      id: check_tag
+      run: |
+        tag_exists=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/${{ github.repository }}/tags" | jq -r '.[].name' | grep -w "v${{ env.releases_tag }}")
+        if [ -n "$tag_exists" ]; then
+          echo "Tag v${{ env.releases_tag }} already exists. Skipping release creation."
+          echo "skip_release=true" >> $GITHUB_ENV
+        else
+          echo "skip_release=false" >> $GITHUB_ENV
+        fi
+
     - name: Download the latest Neovim release
+      if: env.skip_release != 'true'
       run: |
         curl -L "https://gitlab.b-data.ch/neovim/neovim/-/releases/$releases_tag/downloads/builds/nvim-linux-arm64.tar.gz" -o nvim-linux-arm64.tar.gz
 
     - name: Create GitHub Release
       id: create_release
+      if: env.skip_release != 'true'
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -37,6 +50,7 @@ jobs:
         prerelease: false
 
     - name: Upload Asset to Release
+      if: env.skip_release != 'true'
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
