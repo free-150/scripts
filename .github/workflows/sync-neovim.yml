@@ -1,47 +1,46 @@
-name: Sync Neovim Release
+name: Sync GitLab Releases
 
 on:
-  workflow_dispatch:
   schedule:
-    - cron: '0 0 * * *'  # 每天定时运行一次，也可以根据需要修改
+    - cron: '0 0 * * *'  # 每天午夜运行一次
+  workflow_dispatch:  # 允许手动触发
 
 jobs:
-  download_and_release:
+  sync-gitlab-releases:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Set up Git
-      run: |
-        git config --global user.name "github-actions[bot]"
-        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+      - name: Checkout GitHub repository
+        uses: actions/checkout@v2
 
-    - name: Get latest release tag from GitLab
-      id: get_release_tag
-      run: |
-        releases_tag=$(curl -s "https://gitlab.b-data.ch/api/v4/projects/362/releases" | grep -Eo '"tag_name":"v[0-9]+\.[0-9]+\.[0-9]+"' | head -n 1 | awk -F'"' '{print $4}' | awk -F'v' '{print $2}')
-        echo "releases_tag=$releases_tag" >> $GITHUB_ENV
+      - name: Fetch Latest GitLab Release
+        env:
+          GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
+        run: |
+          # GitLab 项目的 API URL（替换为你的项目 ID）
+          GITLAB_PROJECT_ID="362"  # GitLab 项目 ID
+          GITLAB_API_URL="https://gitlab.b-data.ch/api/v4/projects/$GITLAB_PROJECT_ID/releases"
+          
+          # 获取最新的 Release 版本信息
+          release_tag=$(curl -s "$GITLAB_API_URL" | grep -Eo '"tag_name":"v[0-9]+\.[0-9]+\.[0-9]+"' | head -n 1 | awk -F'"' '{print $4}')  # 仅获取最新的 Release
 
-    - name: Download the latest Neovim release
-      run: |
-        curl -L "https://gitlab.b-data.ch/neovim/neovim/-/releases/v$releases_tag/downloads/builds/nvim-linux-arm64.tar.gz" -o nvim-linux-arm64.tar.gz
+          # 创建一个 releases 文件夹以存储下载的文件
+          mkdir -p releases
 
-    - name: Create GitHub Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: "v${{ env.releases_tag }}"
-        release_name: "Neovim v${{ env.releases_tag }}"
-        draft: false
-        prerelease: false
+          # 下载最新的 Release 文件
+          DL_NVIM="https://gitlab.b-data.ch/neovim/neovim/-/releases/$release_tag/downloads/builds/nvim-linux-arm64.tar.gz"
+          curl -sL "$DL_NVIM" -o "releases/nvim-linux-arm64.tar.gz"
 
-    - name: Upload Asset to Release
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        release_id: ${{ steps.create_release.outputs.id }}
-        asset_path: ./nvim-linux-arm64.tar.gz
-        asset_name: nvim-linux-arm64.tar.gz
-        asset_content_type: application/gzip
+      - name: Upload to GitHub Releases
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # GitHub 自动提供
+        run: |
+          # 检查是否已有相同 tag 的 Release
+          existing_release=$(gh release view "$release_tag" || echo "not found")
+          
+          # 如果没有相同 tag，则创建新的 Release
+          if [[ "$existing_release" == "not found" ]]; then
+            gh release create "$release_tag" ./releases/nvim-linux-arm64.tar.gz --title "Neovim $release_tag" --notes "Synchronized from GitLab"
+          else
+            echo "Release $release_tag already exists on GitHub, skipping creation."
+          fi
