@@ -6,7 +6,7 @@ bash nvim.sh -h
 
 ## 安装
 ```shell
-curl -fsSL https://ghp.ci/https://raw.githubusercontent.com/free-150/script/main/nvim.sh | bash
+curl -fsSL https://ghp.ci/https://raw.githubusercontent.com/free-150/scripts/refs/heads/main/nvim.sh | bash
 ```
 
 支持
