@@ -45,6 +45,7 @@ jobs:
           # 如果没有相同 tag，则创建新的 Release
           if [[ "$existing_release" == "not found" ]]; then
             echo "测试"
+            ls ./releases/
             gh release create "$release_tag" ./releases/nvim-linux-arm64.tar.gz --title "Neovim $release_tag" --notes "Synchronized from GitLab"
           else
             echo "Release $release_tag already exists on GitHub, skipping creation."
