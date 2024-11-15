@@ -28,7 +28,7 @@ jobs:
           mkdir -p releases
 
           # 下载最新的 Release 文件
-          DL_URL="https://gitlab.b-data.ch/api/v4/projects/362/packages/generic/neovim/$rrelease_tag/nvim-linux-arm64.tar.gz"
+          DL_URL="https://gitlab.b-data.ch/api/v4/projects/362/packages/generic/neovim/$release_tag/nvim-linux-arm64.tar.gz"
           curl -sL "$DL_URL" -o "releases/nvim-linux-arm64.tar.gz"
 
       - name: Upload to GitHub Releases
