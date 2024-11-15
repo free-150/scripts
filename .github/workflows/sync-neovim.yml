@@ -41,6 +41,7 @@ jobs:
         run: |
           # 检查是否已有相同 tag 的 Release
           existing_release=$(gh release view "$release_tag" || echo "not found")
+          echo $existing_release
           
           # 如果没有相同 tag，则创建新的 Release
           if [[ "$existing_release" == "not found" ]]; then
