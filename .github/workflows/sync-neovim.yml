@@ -1,5 +1,5 @@
 name: Sync Neovim Release
-
+# 从https://gitlab.b-data.ch/neovim/neovim 下载 arm64 neovim
 on:
   workflow_dispatch:
   schedule:
@@ -18,12 +18,12 @@ jobs:
     - name: Get latest release tag from GitLab
       id: get_release_tag
       run: |
-        releases_tag=$(curl -s "https://gitlab.b-data.ch/api/v4/projects/362/releases" | grep -Eo '"tag_name":"v[0-9]+\.[0-9]+\.[0-9]+"' | head -n 1 | awk -F'"' '{print $4}' | awk -F'v' '{print $2}')
+        releases_tag=$(curl -s "https://gitlab.b-data.ch/api/v4/projects/362/releases" | grep -Eo '"tag_name":"v[0-9]+\.[0-9]+\.[0-9]+"' | head -n 1 | awk -F'"' '{print $4}')
         echo "releases_tag=$releases_tag" >> $GITHUB_ENV
 
     - name: Download the latest Neovim release
       run: |
-        curl -L "https://gitlab.b-data.ch/neovim/neovim/-/releases/v$releases_tag/downloads/builds/nvim-linux-arm64.tar.gz" -o nvim-linux-arm64.tar.gz
+        curl -L "https://gitlab.b-data.ch/neovim/neovim/-/releases/$releases_tag/downloads/builds/nvim-linux-arm64.tar.gz" -o nvim-linux-arm64.tar.gz
 
     - name: Create GitHub Release
       id: create_release
@@ -31,8 +31,8 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: "v${{ env.releases_tag }}"
-        release_name: "Neovim v${{ env.releases_tag }}"
+        tag_name: "${{ env.releases_tag }}"
+        release_name: "Neovim ${{ env.releases_tag }}"
         draft: false
         prerelease: false
 
