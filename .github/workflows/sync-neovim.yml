@@ -20,18 +20,16 @@ jobs:
           # GitLab 项目的 API URL（替换为你的项目 ID）
           GITLAB_PROJECT_ID="362"  # GitLab 项目 ID
           GITLAB_API_URL="https://gitlab.b-data.ch/api/v4/projects/$GITLAB_PROJECT_ID/releases"
-          https://gitlab.b-data.ch/api/v4/projects/362/releases
           
           # 获取最新的 Release 版本信息
-          release_info=$(curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" "$GITLAB_API_URL" | jq '.[0]')  # 仅获取最新的 Release
-          release_tag=$(echo "$release_info" | jq -r '.tag_name')
-          release_asset_url=$(echo "$release_info" | jq -r '.assets.sources[0].url')
+          release_tag=$(curl -s "$GITLAB_API_URL" | grep -Eo '"tag_name":"v[0-9]+\.[0-9]+\.[0-9]+"' | head -n 1 | awk -F'"' '{print $4}' | awk -F'v' '{print $2}')  # 仅获取最新的 Release
 
           # 创建一个 releases 文件夹以存储下载的文件
           mkdir -p releases
 
           # 下载最新的 Release 文件
-          curl -sL --header "PRIVATE-TOKEN: $GITLAB_TOKEN" "$release_asset_url" -o "releases/nvim-linux-arm64.tar.gz"
+          DL_URL="https://gitlab.b-data.ch/api/v4/projects/362/packages/generic/neovim/$rrelease_tag/nvim-linux-arm64.tar.gz"
+          curl -sL "$DL_URL" -o "releases/nvim-linux-arm64.tar.gz"
 
       - name: Upload to GitHub Releases
         env:
