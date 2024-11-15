@@ -23,7 +23,6 @@ jobs:
           
           # 获取最新的 Release 版本信息
           release_tag=$(curl -s "$GITLAB_API_URL" | grep -Eo '"tag_name":"v[0-9]+\.[0-9]+\.[0-9]+"' | head -n 1 | awk -F'"' '{print $4}' | awk -F'v' '{print $2}')  # 仅获取最新的 Release
-          echo "最新版本是: $release_tag"
 
           # 创建一个 releases 文件夹以存储下载的文件
           mkdir -p releases
@@ -31,18 +30,21 @@ jobs:
           # 下载最新的 Release 文件
           DL_URL="https://gitlab.b-data.ch/api/v4/projects/362/packages/generic/neovim/$release_tag/nvim-linux-arm64.tar.gz"
           curl -sL "$DL_URL" -o "releases/nvim-linux-arm64.tar.gz"
+          
           # 加v版本前缀
           release_tag="v$release_tag"
+          echo "最新版本是: $release_tag"
 
       - name: Upload to GitHub Releases
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # GitHub 自动提供
         run: |
           # 检查是否已有相同 tag 的 Release
-          existing_release=$(gh release view "$release_tag" --json name || echo "not found")
+          existing_release=$(gh release view "$release_tag" || echo "not found")
           
           # 如果没有相同 tag，则创建新的 Release
           if [[ "$existing_release" == "not found" ]]; then
+            echo "测试"
             gh release create "$release_tag" ./releases/nvim-linux-arm64.tar.gz --title "Neovim $release_tag" --notes "Synchronized from GitLab"
           else
             echo "Release $release_tag already exists on GitHub, skipping creation."
