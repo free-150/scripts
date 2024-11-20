@@ -1,0 +1,114 @@
+#!/usr/bin/env bash
+
+# 设置默认变量，可以通过命令行传入不同的值
+VPN_SERVER_IP="${1}"
+VPN_IPSEC_PSK="${2}"
+VPN_USER="${3}"
+VPN_PASSWORD="${4}"
+
+if [[ -z "$VPN_SERVER_IP" || -z "$VPN_IPSEC_PSK" || -z "$VPN_USER" || -z "$VPN_PASSWORD" ]]; then
+    echo "请提供 VPN 服务器 IP、IPsec 密钥、用户名和密码."
+    echo "用法: $0 <VPN_SERVER_IP> <VPN_IPSEC_PSK> <VPN_USER> <VPN_PASSWORD>"
+    exit 1
+fi
+
+# 安装必要的软件包
+echo "安装所需的软件包..."
+if [ -f /etc/lsb-release ]; then
+    # Ubuntu/Debian
+    apt-get update
+    apt-get install -y strongswan xl2tpd net-tools
+elif [ -f /etc/redhat-release ]; then
+    # CentOS/Fedora
+    yum install -y strongswan xl2tpd net-tools
+    if [ -f /etc/centos-release ]; then
+        yum install -y epel-release
+    fi
+else
+    echo "不支持此系统"
+    exit 1
+fi
+
+# 配置 strongSwan
+echo "配置 strongSwan..."
+cat > /etc/ipsec.conf <<EOF
+# ipsec.conf - strongSwan IPsec 配置文件
+
+conn myvpn
+  auto=add
+  keyexchange=ikev1
+  authby=secret
+  type=transport
+  left=%defaultroute
+  leftprotoport=17/1701
+  rightprotoport=17/1701
+  right=$VPN_SERVER_IP
+  ike=aes128-sha1-modp2048
+  esp=aes128-sha1
+EOF
+
+cat > /etc/ipsec.secrets <<EOF
+: PSK "$VPN_IPSEC_PSK"
+EOF
+
+chmod 600 /etc/ipsec.secrets
+
+# 对于 CentOS 和 Fedora，创建符号链接
+if [ -f /etc/strongswan/ipsec.conf ]; then
+    mv /etc/strongswan/ipsec.conf /etc/strongswan/ipsec.conf.old 2>/dev/null
+    mv /etc/strongswan/ipsec.secrets /etc/strongswan/ipsec.secrets.old 2>/dev/null
+    ln -s /etc/ipsec.conf /etc/strongswan/ipsec.conf
+    ln -s /etc/ipsec.secrets /etc/strongswan/ipsec.secrets
+fi
+
+# 配置 xl2tpd
+echo "配置 xl2tpd..."
+cat > /etc/xl2tpd/xl2tpd.conf <<EOF
+[lac myvpn]
+lns = $VPN_SERVER_IP
+ppp debug = yes
+pppoptfile = /etc/ppp/options.l2tpd.client
+length bit = yes
+EOF
+
+cat > /etc/ppp/options.l2tpd.client <<EOF
+ipcp-accept-local
+ipcp-accept-remote
+refuse-eap
+require-chap
+noccp
+noauth
+mtu 1280
+mru 1280
+noipdefault
+defaultroute
+usepeerdns
+connect-delay 5000
+name "$VPN_USER"
+password "$VPN_PASSWORD"
+EOF
+
+chmod 600 /etc/ppp/options.l2tpd.client
+
+# 创建 xl2tpd 控制文件
+mkdir -p /var/run/xl2tpd
+touch /var/run/xl2tpd/l2tp-control
+
+# 重启服务
+echo "重启服务..."
+service strongswan restart || ipsec restart
+service xl2tpd restart
+
+# 开始 IPsec 连接
+echo "启动 IPsec 连接..."
+if [ -f /etc/lsb-release ]; then
+    ipsec up myvpn
+elif [ -f /etc/redhat-release ]; then
+    strongswan up myvpn
+fi
+
+# 启动 L2TP 连接
+echo "启动 L2TP 连接..."
+echo "c myvpn" > /var/run/xl2tpd/l2tp-control
+
+echo "VPN 客户端配置完成并已连接。"
