@@ -114,7 +114,7 @@ is_install() {
     INSTALL_DIR="/usr/local/nvim"
     tar -xzvf "$NVIM_FILE" -C /tmp/isneovim >/dev/null 2>&1
     mkdir -p "$INSTALL_DIR"
-    mv /tmp/isneovim/nvim-linux64/* "$INSTALL_DIR" >/dev/null 2>&1
+    mv /tmp/isneovim/${PACKAGE_NAME}/* "$INSTALL_DIR" >/dev/null 2>&1
     chmod +x "$INSTALL_DIR/bin/nvim"
     [ -L /usr/local/bin/nvim ] && rm /usr/local/bin/nvim
     ln -s "$INSTALL_DIR/bin/nvim" /usr/local/bin/nvim
