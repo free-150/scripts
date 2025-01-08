@@ -78,7 +78,7 @@ x86_64)
     REPO="neovim/neovim"
 	;;
 aarch64 | arm64)
-	PACKAGE_NAME="nvim-linux64-arm64"
+	PACKAGE_NAME="nvim-linux-arm64"
     REPO="free-150/scripts"
 	;;
 *)
