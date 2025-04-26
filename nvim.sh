@@ -74,7 +74,7 @@ ARCH="UNKNOWN"
 
 case "$platform" in
 x86_64)
-	PACKAGE_NAME="nvim-linux64"
+	PACKAGE_NAME="nvim-linux-x86_64"
     REPO="neovim/neovim"
 	;;
 aarch64 | arm64)
